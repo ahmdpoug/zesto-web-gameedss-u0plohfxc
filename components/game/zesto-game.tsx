@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useGameActions, useGameState, useSession } from '@/hooks/use-game'
 import { useNow } from '@/hooks/use-now'
@@ -22,6 +22,8 @@ import { QuestsPanel, claimableCount } from './quests-panel'
 import { RewardReveal } from './reward-reveal'
 import { RewardsPanel } from './rewards-panel'
 import { TopHud } from './top-hud'
+import { Minimap } from './minimap'
+import { WorldMap } from './world-map'
 
 const BeachWorld = dynamic(() => import('./world/beach-world').then((m) => m.BeachWorld), {
   ssr: false,
@@ -65,6 +67,7 @@ export function ZestoGame() {
   const [result, setResult] = useState<DigResult | null>(null)
   const [pending, setPending] = useState<string | null>(null)
   const [registering, setRegistering] = useState(false)
+  const [mapOpen, setMapOpen] = useState(false)
 
   const player = game?.player ?? null
   const character: CharacterId | null = player?.character ?? null
@@ -177,6 +180,21 @@ export function ZestoGame() {
     setNearKey(null)
   }, [digSpot])
 
+  const openMap = useCallback(() => {
+    play(sfx.tap)
+    setMapOpen(true)
+  }, [play])
+  const closeMap = useCallback(() => setMapOpen(false), [])
+  const handleTravel = useCallback(
+    (name: string) => {
+      play(() => sfx.reveal(2))
+      setMapOpen(false)
+      setNearKey(null)
+      toast.success(`Arrived at ${name}`)
+    },
+    [play],
+  )
+
   const closePanel = useCallback(() => setPanel(null), [])
   const closeBuilding = useCallback(() => setBuildingPanel(null), [])
 
@@ -219,6 +237,16 @@ export function ZestoGame() {
   const playing = !onboardingStep && !!player && !!character
   const gathering = gatherNode !== null
 
+  useEffect(() => {
+    if (!playing) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== 'm' || e.repeat || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      setMapOpen((open) => !open)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [playing])
+
   return (
     <main className="relative h-dvh w-full overflow-hidden bg-background">
       <h1 className="sr-only">Zesto Dig — beach treasure hunt and homestead builder</h1>
@@ -230,7 +258,7 @@ export function ZestoGame() {
         digIndex={digSpot}
         faceTarget={faceTarget}
         buildingLevels={buildingLevels}
-        locked={stage !== null || gathering || result !== null || !playing || panel !== null || buildingPanel !== null}
+        locked={stage !== null || gathering || result !== null || !playing || panel !== null || buildingPanel !== null || mapOpen}
         digging={stage === 'confirming' || stage === 'revealing' || gathering}
         onNearChange={setNearKey}
       />
@@ -245,7 +273,9 @@ export function ZestoGame() {
             points={player.totalPoints}
             player={player}
             onOpenProfile={() => setPanel('profile')}
-          />
+          >
+            <Minimap onOpen={openMap} />
+          </TopHud>
           <DigBar
             character={character}
             points={player.totalPoints}
@@ -295,6 +325,10 @@ export function ZestoGame() {
           {panel === 'quests' ? <QuestsPanel state={game} run={run} pending={pending} onClose={closePanel} /> : null}
           {buildingPanel ? <BuildingPanel kind={buildingPanel} state={game} run={run} pending={pending} onClose={closeBuilding} /> : null}
         </>
+      ) : null}
+
+      {playing && mapOpen ? (
+        <WorldMap spots={spots} buildingLevels={buildingLevels} onClose={closeMap} onTravel={handleTravel} />
       ) : null}
 
       {result ? <RewardReveal result={result} onClose={closeReveal} onDigAgain={closeReveal} /> : null}

@@ -18,7 +18,9 @@ export function TopHud({
   points,
   player,
   onOpenProfile,
+  children,
 }: {
+  children?: React.ReactNode
   night: boolean
   onToggleNight: () => void
   muted: boolean
@@ -87,6 +89,7 @@ export function TopHud({
           </div>
           <PointsBucket points={points} />
         </div>
+        {children}
       </div>
     </header>
   )
