@@ -1,6 +1,9 @@
 import { randomInt } from 'node:crypto'
 import { and, eq, sql } from 'drizzle-orm'
-import { buildings, players, questClaims, tools } from '@/lib/db/schema'
+import { isHash, type Hash } from 'viem'
+import { buildings, payments, players, questClaims, tools } from '@/lib/db/schema'
+import { actionFee, zestoToWei } from '@/lib/zesto/fees'
+import { paidToTreasury } from '@/lib/zesto/payments'
 import { db } from '@/lib/db'
 import {
   BUILDINGS,
@@ -269,11 +272,65 @@ async function perform(tx: Executor, wallet: string, action: GameAction): Promis
   }
 }
 
+class DryRunComplete extends Error {}
+
+async function feeFor(tx: Executor, wallet: string, action: GameAction) {
+  if (action.type !== 'upgrade') return actionFee(action)
+  const [row] = await tx
+    .select({ level: buildings.level })
+    .from(buildings)
+    .where(and(eq(buildings.wallet, wallet), eq(buildings.kind, action.kind)))
+    .limit(1)
+  return actionFee(action, row?.level ?? 0)
+}
+
+export const maxDuration = 60
+
 export async function POST(request: Request) {
   try {
     const wallet = await requireWallet(request)
-    const action = parseAction(await request.json().catch(() => null))
-    const outcome = await db.transaction((tx) => perform(tx, wallet, action))
+    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+    const action = parseAction(body)
+
+    if (body?.dryRun === true) {
+      let fee = 0
+      try {
+        await db.transaction(async (tx) => {
+          fee = await feeFor(tx, wallet, action)
+          await perform(tx, wallet, action)
+          throw new DryRunComplete()
+        })
+      } catch (error) {
+        if (!(error instanceof DryRunComplete)) throw error
+      }
+      return Response.json({ fee })
+    }
+
+    const txHash = typeof body?.txHash === 'string' && isHash(body.txHash) ? (body.txHash.toLowerCase() as Hash) : null
+    let paidWei = BigInt(0)
+    if (txHash) {
+      try {
+        paidWei = await paidToTreasury(txHash, wallet)
+      } catch {
+        throw new GameError('Could not confirm your payment yet. Please try again shortly.', 502)
+      }
+    }
+
+    const outcome = await db.transaction(async (tx) => {
+      const fee = await feeFor(tx, wallet, action)
+      if (fee > 0) {
+        if (!txHash) throw new GameError(`This action costs ${fee} $ZESTO`, 402)
+        if (paidWei < zestoToWei(fee)) throw new GameError(`Payment too low — this action costs ${fee} $ZESTO`, 402)
+        const recorded = await tx
+          .insert(payments)
+          .values({ txHash, wallet, action: action.type, amount: fee })
+          .onConflictDoNothing()
+          .returning({ txHash: payments.txHash })
+        if (recorded.length === 0) throw new GameError('This payment has already been used', 409)
+      }
+      const result = await perform(tx, wallet, action)
+      return { ...result, fee }
+    })
     return Response.json({ state: await loadState(wallet), outcome })
   } catch (error) {
     return errorResponse(error, 'game/action')

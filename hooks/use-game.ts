@@ -2,10 +2,12 @@
 
 import { useCallback, useState } from 'react'
 import useSWR from 'swr'
-import { createWalletClient, custom, type Address } from 'viem'
+import { createWalletClient, custom, type Address, type Hash } from 'viem'
 import { useWalletContext } from '@/components/wallet-context'
+import { payTreasury } from '@/hooks/use-zesto'
 import type { CharacterId } from '@/lib/zesto/config'
-import type { ActionResponse, GameAction, GameState } from '@/lib/zesto/game-types'
+import { zestoToWei } from '@/lib/zesto/fees'
+import type { ActionQuote, ActionResponse, GameAction, GameState } from '@/lib/zesto/game-types'
 import { robinhoodTestnet } from '@/lib/zesto/chain'
 
 const storageKey = (address: string) => `zesto:session:${address.toLowerCase()}`
@@ -103,17 +105,60 @@ export function useGameState() {
   return { ...swr, token }
 }
 
+export type ActionStage = 'quoting' | 'paying' | 'confirming' | 'applying'
+
+// A confirmed payment whose action then failed server-side; reused by the next action that fits so it isn't lost.
+let unspentPayment: { hash: Hash; amount: number } | null = null
+
 export function useGameActions() {
   const { token, mutate } = useGameState()
+  const { wallet } = useWalletContext()
 
   const act = useCallback(
-    async (action: GameAction) => {
+    async (action: GameAction, onStage?: (stage: ActionStage) => void) => {
       if (!token) throw new Error('Sign in to play')
-      const res = await request<ActionResponse>('/api/game/action', token, { method: 'POST', body: JSON.stringify(action) })
-      await mutate(res.state, { revalidate: false })
-      return res.outcome
+      onStage?.('quoting')
+      const { fee } = await request<ActionQuote>('/api/game/action', token, {
+        method: 'POST',
+        body: JSON.stringify({ ...action, dryRun: true }),
+      })
+
+      let txHash: Hash | undefined
+      if (fee > 0) {
+        if (unspentPayment && unspentPayment.amount >= fee) {
+          txHash = unspentPayment.hash
+        } else {
+          if (!wallet) throw new Error('Connect your wallet first')
+          onStage?.('paying')
+          txHash = await payTreasury(wallet, zestoToWei(fee), () => onStage?.('confirming'))
+          unspentPayment = { hash: txHash, amount: fee }
+        }
+      }
+
+      onStage?.('applying')
+      let lastError: unknown
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const res = await request<ActionResponse>('/api/game/action', token, {
+            method: 'POST',
+            body: JSON.stringify({ ...action, txHash }),
+          })
+          if (txHash && unspentPayment?.hash === txHash) unspentPayment = null
+          await mutate(res.state, { revalidate: false })
+          return res.outcome
+        } catch (error) {
+          lastError = error
+          if (error instanceof Error && /already been used/.test(error.message) && unspentPayment?.hash === txHash) unspentPayment = null
+          if (!(error instanceof Error) || !/temporarily unavailable|confirm your payment/.test(error.message)) break
+          await new Promise((r) => setTimeout(r, 2000))
+        }
+      }
+      if (txHash && unspentPayment?.hash === txHash) {
+        throw new Error(`${lastError instanceof Error ? lastError.message : 'Action failed'}. Your ${fee} $ZESTO payment is saved for your next action.`)
+      }
+      throw lastError
     },
-    [token, mutate],
+    [token, mutate, wallet],
   )
 
   const register = useCallback(

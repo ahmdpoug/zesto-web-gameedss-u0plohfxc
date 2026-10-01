@@ -18,6 +18,7 @@ import {
   type ResourceId,
 } from '@/lib/zesto/economy'
 import type { GameAction, GameState } from '@/lib/zesto/game-types'
+import { FEES, buildingFee, craftFee, smeltFee } from '@/lib/zesto/fees'
 import { cn } from '@/lib/utils'
 import { CostList } from './cost-list'
 import { Panel } from './panel'
@@ -120,7 +121,7 @@ function BuildingCard({ kind, state, run, pending }: { kind: BuildingKind; state
               <span className="ml-1.5 text-primary">{`+${buildingPoints(kind, nextLevel)} pts`}</span>
             </p>
             {level > 0 ? <p className="text-[11px] text-foreground/80">{def.effects[nextLevel - 1]}</p> : null}
-            <CostList cost={cost} resources={resources} className="mt-1" />
+            <CostList cost={cost} resources={resources} zesto={buildingFee(nextLevel)} className="mt-1" />
           </div>
           <PrimaryButton
             onClick={() => run({ type: level === 0 ? 'build' : 'upgrade', kind }, key)}
@@ -170,7 +171,7 @@ function CollectCard({ state, run, pending }: { state: GameState; run: RunAction
       </div>
       <PrimaryButton onClick={() => run({ type: 'collect' }, 'collect')} disabled={empty || pending !== null} loading={pending === 'collect'}>
         <PackageOpen className="size-4" aria-hidden="true" />
-        Collect
+        {`Collect · ${FEES.collect} $ZESTO`}
       </PrimaryButton>
     </div>
   )
@@ -232,7 +233,7 @@ function SmeltSection({ state, run, pending }: { state: GameState; run: RunActio
                 Max
               </button>
             </div>
-            <CostList cost={cost} resources={resources} />
+            <CostList cost={cost} resources={resources} zesto={smeltFee(times)} />
           </div>
           <PrimaryButton
             className="mt-2 w-full"
@@ -291,7 +292,7 @@ function ToolsSection({ state, run, pending }: { state: GameState; run: RunActio
                       {anvil === 0 ? 'Build an Anvil' : `Anvil Lv ${tool.tier} required`}
                     </p>
                   ) : (
-                    <CostList cost={tool.cost} resources={resources} />
+                    <CostList cost={tool.cost} resources={resources} zesto={craftFee(tool.id)} />
                   )}
                   <PrimaryButton
                     className="h-8 px-3 text-xs"

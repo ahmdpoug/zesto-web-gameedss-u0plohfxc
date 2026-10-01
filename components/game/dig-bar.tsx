@@ -4,6 +4,7 @@ import { Axe, BookOpen, Coins, Gift, Hammer, LoaderCircle, Lock, MapPin, Pickaxe
 import type { DigStage } from '@/hooks/use-zesto'
 import { BUY_URL, CHARACTER_BY_ID, DIG_COST, getLevel, type CharacterId } from '@/lib/zesto/config'
 import { BUILDING_BY_ID, GATHER_ENERGY, RESOURCE_META, type BuildingDef, type ResourceNode } from '@/lib/zesto/economy'
+import { FEES } from '@/lib/zesto/fees'
 import { cn } from '@/lib/utils'
 import { CharacterAvatar } from './character-avatar'
 import { Joystick } from './joystick'
@@ -177,7 +178,7 @@ function PrimaryAction({
         tone="teal"
         icon={busy ? spinner : <Icon className="size-6" />}
         label="Gather"
-        sub={empty ? 'No energy' : `${GATHER_ENERGY} energy`}
+        sub={empty ? 'No energy' : `${FEES.gather} $ZESTO · ${GATHER_ENERGY} energy`}
       />
     )
   }

@@ -104,18 +104,32 @@ export function ZestoGame() {
   const run = useCallback(
     async (action: GameAction, key: string) => {
       setPending(key)
+      const toastId = `action:${key}`
       try {
-        const outcome = await act(action)
+        const outcome = await act(action, (stage) => {
+          if (stage === 'paying') toast.loading('Confirm the $ZESTO payment in your wallet', { id: toastId })
+          else if (stage === 'confirming') toast.loading('Confirming payment on-chain…', { id: toastId })
+          else if (stage === 'applying') toast.dismiss(toastId)
+        })
+        toast.dismiss(toastId)
         const gained = Object.entries(outcome.gained ?? {})
           .map(([k, v]) => `+${v} ${RESOURCE_META[k as ResourceId].label.toLowerCase()}`)
           .join(' · ')
         play(() => sfx.reveal(action.type === 'build' || action.type === 'upgrade' || action.type === 'craft' ? 3 : 1))
         toast.success(outcome.title, {
-          description: [outcome.description, gained, outcome.points > 0 ? `+${outcome.points} pts` : null].filter(Boolean).join(' · '),
+          description: [
+            outcome.description,
+            gained,
+            outcome.points > 0 ? `+${outcome.points} pts` : null,
+            outcome.fee ? `−${outcome.fee} $ZESTO` : null,
+          ]
+            .filter(Boolean)
+            .join(' · '),
         })
         void refreshPlayer()
         void refreshBoard()
       } catch (err) {
+        toast.dismiss(toastId)
         play(sfx.error)
         toast.error(friendlyError(err))
       } finally {

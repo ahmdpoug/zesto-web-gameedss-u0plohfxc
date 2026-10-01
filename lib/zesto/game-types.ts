@@ -31,6 +31,8 @@ export type GameState = {
   serverTime: string
 }
 
+export type ActionQuote = { fee: number }
+
 export type GameAction =
   | { type: 'gather'; node: NodeId }
   | { type: 'build'; kind: BuildingKind }
@@ -46,6 +48,7 @@ export type ActionOutcome = {
   description?: string
   points: number
   gained?: Partial<Resources>
+  fee?: number
 }
 
 export type ActionResponse = { state: GameState; outcome: ActionOutcome }

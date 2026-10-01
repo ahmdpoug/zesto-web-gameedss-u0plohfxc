@@ -89,6 +89,14 @@ export const sessions = pgTable('zesto_sessions', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+export const payments = pgTable('zesto_payments', {
+  txHash: text('tx_hash').primaryKey(),
+  wallet: text('wallet').notNull(),
+  action: text('action').notNull(),
+  amount: integer('amount').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 export const nonces = pgTable('zesto_nonces', {
   wallet: text('wallet').primaryKey(),
   nonce: text('nonce').notNull(),

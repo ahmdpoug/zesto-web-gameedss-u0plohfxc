@@ -3,7 +3,7 @@
 import { useCallback } from 'react'
 import { useWalletContext } from '@/components/wallet-context'
 import useSWR from 'swr'
-import { createWalletClient, custom, erc20Abi, formatUnits, type Address } from 'viem'
+import { createWalletClient, custom, erc20Abi, formatUnits, type Address, type Hash } from 'viem'
 import { publicClient, robinhoodTestnet } from '@/lib/zesto/chain'
 import {
   DIG_COST_WEI,
@@ -96,6 +96,31 @@ export type DigResult = {
 
 export type DigStage = 'paying' | 'confirming' | 'revealing'
 
+type ConnectedWallet = NonNullable<ReturnType<typeof useWalletContext>['wallet']>
+
+/** Sends $ZESTO to the treasury and waits for confirmation. */
+export async function payTreasury(wallet: ConnectedWallet, amountWei: bigint, onSubmitted?: () => void): Promise<Hash> {
+  if (wallet.chainId !== `eip155:${robinhoodTestnet.id}`) {
+    await wallet.switchChain(robinhoodTestnet.id)
+  }
+  const provider = await wallet.getEthereumProvider()
+  const walletClient = createWalletClient({
+    account: wallet.address as Address,
+    chain: robinhoodTestnet,
+    transport: custom(provider),
+  })
+  const txHash = await walletClient.writeContract({
+    address: ZESTO_ADDRESS,
+    abi: erc20Abi,
+    functionName: 'transfer',
+    args: [TREASURY_ADDRESS, amountWei],
+  })
+  onSubmitted?.()
+  const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash, timeout: 90_000 })
+  if (receipt.status !== 'success') throw new Error('Transaction reverted on-chain')
+  return txHash
+}
+
 export function useDig() {
   const { wallet, address } = useZestoWallet()
 
@@ -104,25 +129,7 @@ export function useDig() {
       if (!wallet || !address) throw new Error('Connect your wallet first')
 
       onStage('paying')
-      if (wallet.chainId !== `eip155:${robinhoodTestnet.id}`) {
-        await wallet.switchChain(robinhoodTestnet.id)
-      }
-      const provider = await wallet.getEthereumProvider()
-      const walletClient = createWalletClient({
-        account: wallet.address as Address,
-        chain: robinhoodTestnet,
-        transport: custom(provider),
-      })
-      const txHash = await walletClient.writeContract({
-        address: ZESTO_ADDRESS,
-        abi: erc20Abi,
-        functionName: 'transfer',
-        args: [TREASURY_ADDRESS, DIG_COST_WEI],
-      })
-
-      onStage('confirming')
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash, timeout: 90_000 })
-      if (receipt.status !== 'success') throw new Error('Transaction reverted on-chain')
+      const txHash = await payTreasury(wallet, DIG_COST_WEI, () => onStage('confirming'))
 
       onStage('revealing')
       let lastError = 'Could not claim this dig'
