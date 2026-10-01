@@ -1,10 +1,27 @@
 'use client'
 
 import { Moon, Sun, Volume2, VolumeX } from 'lucide-react'
+import { useSyncExternalStore } from 'react'
 import { getTide, useNow } from '@/hooks/use-now'
 import type { GamePlayer } from '@/lib/zesto/game-types'
 import { ResourceHud } from './resource-hud'
 import { WalletButton } from './wallet-button'
+
+const MOBILE_QUERY = '(max-width: 639px)'
+
+function subscribeMobile(onChange: () => void) {
+  const query = window.matchMedia(MOBILE_QUERY)
+  query.addEventListener('change', onChange)
+  return () => query.removeEventListener('change', onChange)
+}
+
+function useIsMobile() {
+  return useSyncExternalStore(
+    subscribeMobile,
+    () => window.matchMedia(MOBILE_QUERY).matches,
+    () => false,
+  )
+}
 
 function formatTime(date: Date) {
   return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
@@ -31,10 +48,11 @@ export function TopHud({
 }) {
   const now = useNow()
   const tide = now ? getTide(now) : null
+  const mobile = useIsMobile()
 
   return (
     <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-2 p-3 sm:p-5">
-      <div className="flex flex-col items-start gap-2">
+      <div className="flex min-w-0 flex-col items-start gap-2">
       <div className="pointer-events-auto flex items-center gap-2">
         <div className="glass-light flex items-center gap-2 rounded-full py-1 pl-1 pr-3 sm:pr-4">
           <span
@@ -74,12 +92,10 @@ export function TopHud({
           <ResourceHud player={player} />
         </div>
       ) : null}
-      </div>
-
-      <div className="pointer-events-auto flex flex-col items-end gap-2">
-        <WalletButton onOpenProfile={onOpenProfile} />
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 sm:hidden">
+      {mobile ? (
+        <div className="pointer-events-auto flex items-center gap-3">
+          {children}
+          <div className="flex flex-col gap-2">
             <HudIconButton onClick={onToggleNight} label={night ? 'Switch to golden hour' : 'Switch to night'}>
               {night ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </HudIconButton>
@@ -87,9 +103,14 @@ export function TopHud({
               {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
             </HudIconButton>
           </div>
-          <PointsBucket points={points} />
         </div>
-        {children}
+      ) : null}
+      </div>
+
+      <div className="pointer-events-auto flex shrink-0 flex-col items-end gap-2">
+        <WalletButton onOpenProfile={onOpenProfile} />
+        <PointsBucket points={points} />
+        {mobile ? null : children}
       </div>
     </header>
   )

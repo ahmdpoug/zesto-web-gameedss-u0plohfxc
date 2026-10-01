@@ -27,7 +27,7 @@ export function Minimap({ onOpen }: { onOpen: () => void }) {
   const info = REGION_BY_ID[region]
 
   return (
-    <div className="flex flex-col items-end gap-1.5">
+    <div className="flex flex-col items-center gap-1.5 sm:items-end">
       <button
         type="button"
         onClick={onOpen}
@@ -52,7 +52,7 @@ export function Minimap({ onOpen }: { onOpen: () => void }) {
           <Maximize2 className="size-3" aria-hidden="true" />
         </span>
       </button>
-      <p className="glass-light flex items-center gap-1.5 rounded-full px-2.5 py-1 font-display text-[11px] font-semibold" aria-live="polite">
+      <p className="glass-light flex max-w-32 items-center gap-1.5 truncate whitespace-nowrap rounded-full px-2.5 py-1 font-display text-[11px] font-semibold" aria-live="polite">
         <span className="size-2 rounded-full" style={{ background: info.color }} aria-hidden="true" />
         {info.name}
       </p>
