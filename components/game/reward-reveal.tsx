@@ -119,7 +119,7 @@ export function RewardReveal({
           <button
             type="button"
             onClick={onDigAgain}
-            className="flex h-12 flex-1 items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-b from-[#ffc069] to-[#ff8a2a] font-display font-bold text-primary-foreground shadow-[0_10px_28px_-8px_#ff8a2a] transition hover:brightness-105 active:scale-95"
+            className="flex h-12 flex-1 items-center justify-center gap-1.5 rounded-2xl btn-primary font-display font-bold text-primary-foreground transition hover:brightness-105 active:scale-95"
           >
             <Shovel className="size-4" aria-hidden="true" />
             Hunt next X

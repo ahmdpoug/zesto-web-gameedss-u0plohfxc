@@ -147,7 +147,7 @@ function QuestCard({ quest, pending, run }: { quest: QuestState; pending: string
             type="button"
             onClick={() => run({ type: 'claim_quest', id: quest.id }, key)}
             disabled={!ready || pending !== null}
-            className="flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-b from-[#ffc069] to-[#ff8a2a] px-4 font-display text-sm font-bold text-primary-foreground shadow-[0_6px_16px_-6px_#ff8a2a] transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:from-secondary disabled:to-secondary disabled:text-muted-foreground disabled:shadow-none"
+            className="flex h-9 items-center gap-1.5 rounded-xl btn-primary px-4 font-display text-sm font-bold text-primary-foreground shadow-[0_6px_16px_-6px_#ff8a2a] transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:from-secondary disabled:to-secondary disabled:text-muted-foreground disabled:shadow-none"
           >
             {pending === key ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : null}
             {ready ? 'Claim' : 'In progress'}

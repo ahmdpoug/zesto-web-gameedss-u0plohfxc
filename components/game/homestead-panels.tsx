@@ -53,7 +53,7 @@ function PrimaryButton({
       onClick={onClick}
       disabled={disabled || loading}
       className={cn(
-        'flex h-10 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-b from-[#ffc069] to-[#ff8a2a] px-4 font-display text-sm font-bold text-primary-foreground shadow-[0_8px_20px_-8px_#ff8a2a] transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:from-secondary disabled:to-secondary disabled:text-muted-foreground disabled:shadow-none',
+        'flex h-10 items-center justify-center gap-1.5 rounded-xl btn-primary px-4 font-display text-sm font-bold text-primary-foreground shadow-[0_8px_20px_-8px_#ff8a2a] transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:from-secondary disabled:to-secondary disabled:text-muted-foreground disabled:shadow-none',
         className,
       )}
     >

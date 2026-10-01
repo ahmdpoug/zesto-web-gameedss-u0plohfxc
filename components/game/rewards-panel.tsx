@@ -57,7 +57,7 @@ export function RewardsPanel({ state, run, pending, onClose }: { state: GameStat
           type="button"
           onClick={() => run({ type: 'checkin' }, 'checkin')}
           disabled={done || pending !== null}
-          className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#ffc069] to-[#ff8a2a] font-display text-sm font-bold text-primary-foreground shadow-[0_8px_20px_-8px_#ff8a2a] transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:from-secondary disabled:to-secondary disabled:text-muted-foreground disabled:shadow-none"
+          className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl btn-primary font-display text-sm font-bold text-primary-foreground shadow-[0_8px_20px_-8px_#ff8a2a] transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:from-secondary disabled:to-secondary disabled:text-muted-foreground disabled:shadow-none"
         >
           {pending === 'checkin' ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : null}
           {done ? 'Checked in — see you tomorrow' : `Check in · +${player.nextCheckinPoints} pts & +${CHECKIN_ENERGY} energy`}

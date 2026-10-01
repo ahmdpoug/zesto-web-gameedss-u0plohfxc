@@ -1,10 +1,10 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Fredoka, Inter } from 'next/font/google'
+import { Inter, Sora } from 'next/font/google'
 import { Providers } from '@/components/providers'
 import './globals.css'
 
-const fredoka = Fredoka({ subsets: ['latin'], variable: '--font-fredoka', weight: ['500', '600', '700'] })
+const fredoka = Sora({ subsets: ['latin'], variable: '--font-fredoka', weight: ['500', '600', '700', '800'] })
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {

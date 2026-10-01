@@ -103,7 +103,7 @@ export function CharacterSelect({
                   type="button"
                   onClick={() => onConfirm(picked)}
                   disabled={submitting}
-                  className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#ffc069] to-[#ff8a2a] px-6 font-display text-base font-bold text-primary-foreground shadow-[0_10px_28px_-8px_#ff8a2a] transition hover:brightness-105 active:scale-95 disabled:opacity-70 sm:flex-none"
+                  className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl btn-primary px-6 font-display text-base font-bold text-primary-foreground transition hover:brightness-105 active:scale-95 disabled:opacity-70 sm:flex-none"
                 >
                   {submitting ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : <Lock className="size-4" aria-hidden="true" />}
                   {submitting ? 'Creating account…' : `Confirm ${hero.name}`}
@@ -123,7 +123,7 @@ export function CharacterSelect({
               <button
                 type="button"
                 onClick={() => setConfirming(true)}
-                className="h-12 rounded-2xl bg-gradient-to-b from-[#ffc069] to-[#ff8a2a] px-6 font-display text-base font-bold text-primary-foreground shadow-[0_10px_28px_-8px_#ff8a2a] transition hover:brightness-105 active:scale-95"
+                className="h-12 rounded-2xl btn-primary px-6 font-display text-base font-bold text-primary-foreground transition hover:brightness-105 active:scale-95"
               >
                 {`Choose ${hero.name} · +${SIGNUP_BONUS} pts`}
               </button>
